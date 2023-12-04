@@ -72,10 +72,12 @@ func main() {
 
 func run() int {
 	kingpin.CommandLine.UsageWriter(os.Stdout)
+	//
 	promlogConfig := &promlog.Config{}
 	flag.AddFlags(kingpin.CommandLine, promlogConfig)
 	kingpin.Version(version.Print("blackbox_exporter"))
 	kingpin.HelpFlag.Short('h')
+	// Parse the commandline
 	kingpin.Parse()
 	logger := promlog.New(promlogConfig)
 	rh := &prober.ResultHistory{MaxResults: *historyLimit}
@@ -85,7 +87,7 @@ func run() int {
 
 	level.Info(logger).Log("msg", "Starting blackbox_exporter", "version", version.Info())
 	level.Info(logger).Log("build_context", version.BuildContext())
-
+	// init configfile
 	if err := sc.ReloadConfig(*configFile, logger); err != nil {
 		level.Error(logger).Log("msg", "Error loading config", "err", err)
 		return 1
@@ -129,6 +131,7 @@ func run() int {
 
 	hup := make(chan os.Signal, 1)
 	reloadCh := make(chan chan error)
+	// 匿名系统SIGHUP
 	signal.Notify(hup, syscall.SIGHUP)
 	go func() {
 		for {
@@ -182,10 +185,12 @@ func run() int {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Healthy"))
 	})
+	// 探测的probe
 	http.HandleFunc(path.Join(*routePrefix, "/probe"), func(w http.ResponseWriter, r *http.Request) {
 		sc.Lock()
 		conf := sc.C
 		sc.Unlock()
+		// handle
 		prober.Handler(w, r, conf, logger, rh, *timeoutOffset, nil, moduleUnknownCounter, logLevelProber)
 	})
 	http.HandleFunc(*routePrefix, func(w http.ResponseWriter, r *http.Request) {

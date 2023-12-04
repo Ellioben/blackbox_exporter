@@ -298,6 +298,7 @@ func ProbeHTTP(ctx context.Context, target string, module config.Module, registr
 		})
 	)
 
+	// regist the prometheus metrics
 	registry.MustRegister(durationGaugeVec)
 	registry.MustRegister(contentLengthGauge)
 	registry.MustRegister(bodyUncompressedLengthGauge)
@@ -309,6 +310,7 @@ func ProbeHTTP(ctx context.Context, target string, module config.Module, registr
 
 	httpConfig := module.HTTP
 
+	// append addr
 	if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
 		target = "http://" + target
 	}
@@ -325,6 +327,7 @@ func ProbeHTTP(ctx context.Context, target string, module config.Module, registr
 	var ip *net.IPAddr
 	if !module.HTTP.SkipResolvePhaseWithProxy || module.HTTP.HTTPClientConfig.ProxyConfig.ProxyURL.URL == nil || module.HTTP.HTTPClientConfig.ProxyConfig.ProxyFromEnvironment {
 		var lookupTime float64
+		// dns parse
 		ip, lookupTime, err = chooseProtocol(ctx, module.HTTP.IPProtocol, module.HTTP.IPProtocolFallback, targetHost, registry, logger)
 		durationGaugeVec.WithLabelValues("resolve").Add(lookupTime)
 		if err != nil {
@@ -441,7 +444,7 @@ func ProbeHTTP(ctx context.Context, target string, module config.Module, registr
 	if !hasUserAgent {
 		request.Header.Set("User-Agent", userAgentDefaultHeader)
 	}
-
+	// collec mrtrics for this library tool
 	trace := &httptrace.ClientTrace{
 		DNSStart:             tt.DNSStart,
 		DNSDone:              tt.DNSDone,

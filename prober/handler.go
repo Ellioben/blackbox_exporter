@@ -53,6 +53,9 @@ func Handler(w http.ResponseWriter, r *http.Request, c *config.Config, logger lo
 	if moduleName == "" {
 		moduleName = "http_2xx"
 	}
+	// module=http2xx target=http://www.baidu.com
+	// module=http2x8
+	// c.Modules is from init config file
 	module, ok := c.Modules[moduleName]
 	if !ok {
 		http.Error(w, fmt.Sprintf("Unknown module %q", moduleName), http.StatusBadRequest)
@@ -81,13 +84,14 @@ func Handler(w http.ResponseWriter, r *http.Request, c *config.Config, logger lo
 		Name: "probe_duration_seconds",
 		Help: "Returns how long the probe took to complete in seconds",
 	})
-
+	// target https://www.baidu.com
 	target := params.Get("target")
 	if target == "" {
 		http.Error(w, "Target parameter is missing", http.StatusBadRequest)
 		return
 	}
-
+	// func() (kinds 4)
+	// prober
 	prober, ok := Probers[module.Prober]
 	if !ok {
 		http.Error(w, fmt.Sprintf("Unknown prober %q", module.Prober), http.StatusBadRequest)
@@ -116,6 +120,7 @@ func Handler(w http.ResponseWriter, r *http.Request, c *config.Config, logger lo
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(probeSuccessGauge)
 	registry.MustRegister(probeDurationGauge)
+	// probe the target
 	success := prober(ctx, target, module, registry, sl)
 	duration := time.Since(start).Seconds()
 	probeDurationGauge.Set(duration)
